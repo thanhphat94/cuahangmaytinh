@@ -152,7 +152,7 @@ app.use(errorHandler);
 
 // Chỉ bind loopback: Cloudflare Tunnel chạy trên cùng máy vẫn truy cập được, LAN/Internet không gọi thẳng port backend.
 app.listen(env.port, '127.0.0.1', () => {
-  console.log(`🚀 Server [${env.nodeEnv}] running on http://localhost:${env.port}`);
+  console.log(` Server [${env.nodeEnv}] running on http://localhost:${env.port}`);
   void bootstrapDemoData();
 
   // Thu hồi tồn kho/voucher cho đơn online bị bỏ dở; COD không bị tự huỷ.
