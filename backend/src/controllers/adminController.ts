@@ -38,6 +38,11 @@ export const deleteProduct = catchAsync(async (req, res) => {
   res.json(result);
 });
 
+export const deleteProductPermanently = catchAsync(async (req, res) => {
+  const result = await adminService.deleteProductPermanently(req.params.id);
+  res.json(result);
+});
+
 export const getAllCategories = catchAsync(async (_req, res) => {
   const categories = await adminService.getAllCategories();
   res.json(categories);

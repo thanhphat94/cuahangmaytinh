@@ -3,7 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   Search, Plus, Edit2, Trash2, Eye, ChevronLeft, ChevronRight,
-  Image, X, Loader2
+  Image, X, Loader2, Archive, ArchiveRestore
 } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/api'
 import { useToast } from '../../components/Toast'
@@ -543,17 +543,28 @@ function AdminProducts() {
   // Rời trang: bỏ qua mọi response còn đang bay.
   useEffect(() => () => { requestIdRef.current += 1 }, [])
 
-  const handleDelete = async (id: string): Promise<void> => {
-    if (!window.confirm('Bạn có chắc muốn ẩn sản phẩm này?')) return
+  /** XÓA VĨNH VIỄN — khác với "Ẩn": dữ liệu mất hẳn, không hiện lại được. */
+  const handleDeletePermanently = async (product: AdminProductRow): Promise<void> => {
+    const soldNote = (product.sold ?? 0) > 0 ? `\nSản phẩm này đã bán ${product.sold} cái.` : ''
+    const confirmed = window.confirm(
+      `XÓA VĨNH VIỄN "${product.name}"?\n\n` +
+      '• Không thể hoàn tác.\n' +
+      '• Đơn hàng cũ vẫn giữ tên, giá, ảnh nhưng không còn liên kết tới sản phẩm.\n' +
+      '• Đánh giá, danh sách yêu thích và giỏ hàng chứa sản phẩm này sẽ bị xóa.' +
+      soldNote +
+      '\n\nNếu chỉ muốn khách không thấy sản phẩm nữa, hãy bấm "Ẩn" thay vì xóa.'
+    )
+    if (!confirmed) return
     try {
-      await api.delete(`/admin/products/${id}`)
-      toast.success('Đã ẩn sản phẩm')
+      await api.delete(`/admin/products/${product._id}/permanent`)
+      toast.success('Đã xóa vĩnh viễn sản phẩm')
       void fetchProducts()
     } catch (err) {
       toast.error('Xóa thất bại: ' + getErrorMessage(err, 'Lỗi không xác định'))
     }
   }
 
+  /** ẨN / HIỆN LẠI — chỉ đổi isActive, dữ liệu vẫn còn. */
   const handleToggleStatus = async (product: AdminProductRow): Promise<void> => {
     try {
       await api.put(`/admin/products/${product._id}`, { isActive: !product.isActive })
@@ -721,9 +732,18 @@ function AdminProducts() {
                             <Edit2 size={16} />
                           </button>
                           <button
-                            onClick={() => handleDelete(product._id)}
+                            onClick={() => handleToggleStatus(product)}
+                            className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded transition"
+                            title={product.isActive ? 'Ẩn sản phẩm (có thể hiện lại)' : 'Hiện lại sản phẩm'}
+                            aria-label={product.isActive ? 'Ẩn sản phẩm' : 'Hiện lại sản phẩm'}
+                          >
+                            {product.isActive ? <Archive size={16} /> : <ArchiveRestore size={16} />}
+                          </button>
+                          <button
+                            onClick={() => handleDeletePermanently(product)}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition"
-                            title="Xóa"
+                            title="Xóa vĩnh viễn (không hoàn tác)"
+                            aria-label="Xóa vĩnh viễn"
                           >
                             <Trash2 size={16} />
                           </button>

@@ -5,7 +5,7 @@ import ApiError from '../helpers/ApiError';
 import { toClientOrder } from '../helpers/orderMapper';
 import { restockOrderItems } from './orderService';
 import { releaseOrderVouchers } from './voucherService';
-import { normalizeVN } from './productService';
+import { invalidateSearchCache, normalizeVN } from './productService';
 import { SAMPLE_POSTS } from '../data/samplePosts';
 
 type AdminProductWithCategory = Prisma.ProductGetPayload<{
@@ -201,16 +201,40 @@ export const updateProduct = async (id: string, data: Prisma.ProductUncheckedUpd
   }
 };
 
+/** ẨN sản phẩm (soft delete): khách không thấy nữa nhưng dữ liệu còn, có thể hiện lại bất cứ lúc nào. */
 export const deleteProduct = async (id: string) => {
   try {
     const product = await prisma.product.update({
       where: { id },
       data: { isActive: false },
     });
+    invalidateSearchCache();
     return { message: 'Đã ẩn sản phẩm (soft delete)', product: { ...product, _id: product.id } };
   } catch {
     throw ApiError.notFound('Không tìm thấy sản phẩm');
   }
+};
+
+/**
+ * XÓA VĨNH VIỄN sản phẩm khỏi database — không hoàn tác được.
+ * Ràng buộc khóa ngoại (xem prisma/migrations) quyết định phần còn lại:
+ *  - OrderItem / PcBuildComponent: chỉ gỡ liên kết (productId → NULL), đơn hàng cũ vẫn giữ nguyên tên, giá, ảnh, số lượng.
+ *  - ProductSpec / ProductVariant / Review / Wishlist / CartItem: bị xóa theo (CASCADE).
+ * File ảnh đã upload không bị xóa vì có thể đang được sản phẩm khác dùng chung.
+ */
+export const deleteProductPermanently = async (id: string) => {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    select: { id: true, name: true, _count: { select: { orderItems: true } } },
+  });
+  if (!product) throw ApiError.notFound('Không tìm thấy sản phẩm');
+
+  await prisma.product.delete({ where: { id } });
+  invalidateSearchCache();
+  return {
+    message: `Đã xóa vĩnh viễn sản phẩm "${product.name}"`,
+    orderItemCount: product._count.orderItems,
+  };
 };
 
 // ─── CATEGORY ─────────────────────────────────────────────

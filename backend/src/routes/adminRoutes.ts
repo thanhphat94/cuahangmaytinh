@@ -8,6 +8,7 @@ import {
   deleteCategory,
   deletePost,
   deleteProduct,
+  deleteProductPermanently,
   getAllOrders,
   getAllCategories,
   deleteUser,
@@ -39,7 +40,10 @@ router.get('/stats',         getDashboardStats);
 router.get('/notifications', getNotifications);
 
 router.route('/products').get(getAllProducts).post(createProduct);
+// DELETE /products/:id           → ẨN sản phẩm (có thể hiện lại)
+// DELETE /products/:id/permanent → XÓA VĨNH VIỄN (không hoàn tác)
 router.route('/products/:id').put(updateProduct).delete(deleteProduct);
+router.delete('/products/:id/permanent', deleteProductPermanently);
 
 router.route('/categories').get(getAllCategories).post(createCategory);
 router.route('/categories/:id').put(updateCategory).delete(deleteCategory);
