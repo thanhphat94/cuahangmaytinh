@@ -60,14 +60,70 @@ type ShippingWebhookInput = {
 const toInt = (value: number | string): number => parseInt(String(value));
 
 // ─── PRODUCT ──────────────────────────────────────────────
+/** Danh mục được chọn + toàn bộ danh mục con (chọn "Máy tính & PC" thì thấy cả sản phẩm ở danh mục con). */
+const collectCategoryIds = async (rootId: string): Promise<string[]> => {
+  const all = await prisma.category.findMany({ select: { id: true, parentId: true } });
+  const childrenOf = new Map<string, string[]>();
+  for (const c of all) {
+    if (!c.parentId) continue;
+    const list = childrenOf.get(c.parentId) ?? [];
+    list.push(c.id);
+    childrenOf.set(c.parentId, list);
+  }
+  const seen = new Set<string>([rootId]); // Set chặn vòng lặp nếu dữ liệu cha-con bị tham chiếu vòng
+  const queue = [rootId];
+  while (queue.length > 0) {
+    const current = queue.shift() as string;
+    for (const childId of childrenOf.get(current) ?? []) {
+      if (!seen.has(childId)) { seen.add(childId); queue.push(childId); }
+    }
+  }
+  return [...seen];
+};
+
 export const getAllProducts = async ({ category, search, page = 1, limit = 20 }: ProductListQuery) => {
   const p = Math.max(1, toInt(page) || 1);
   const l = Math.min(200, toInt(limit) || 20);
   const skip = (p - 1) * l;
 
   const where: Prisma.ProductWhereInput = {};
-  if (category && category !== 'all') where.categoryId = category;
-  if (search) where.name = { contains: search, mode: 'insensitive' };
+  if (category && category !== 'all') where.categoryId = { in: await collectCategoryIds(category) };
+
+  // Tìm kiếm không phân biệt dấu / hoa-thường, khớp theo tên + hãng + SKU + tag.
+  // Prisma `contains` không bỏ dấu được nên lọc bằng normalizeVN ở tầng service
+  // (cửa hàng chỉ có vài trăm sản phẩm nên chi phí không đáng kể).
+  const tokens = normalizeVN(search ?? '').split(/\s+/).filter(Boolean);
+  if (tokens.length > 0) {
+    const candidates = await prisma.product.findMany({
+      where,
+      select: { id: true, name: true, brand: true, sku: true, tags: true, createdAt: true },
+    });
+    const matchedIds = candidates
+      .filter((c) => {
+        const haystack = normalizeVN([c.name, c.brand ?? '', c.sku ?? '', ...c.tags].join(' '));
+        const words = haystack.split(' ');
+        // Từ ngắn (<3 ký tự) chỉ khớp đầu từ để "pc" không dính "IPC", "in" không dính "tinh";
+        // từ dài hơn khớp ở bất kỳ đâu để tìm được mảnh mã SKU như "3520".
+        return tokens.every((token) => (token.length >= 3 ? haystack.includes(token) : words.some((w) => w.startsWith(token))));
+      })
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .map((c) => c.id);
+
+    const pageIds = matchedIds.slice(skip, skip + l);
+    const rows = await prisma.product.findMany({
+      where: { id: { in: pageIds } },
+      include: { category: { select: { name: true } } },
+    });
+    const order = new Map(pageIds.map((id, index) => [id, index]));
+    rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+
+    return {
+      products: rows.map((row: AdminProductWithCategory) => ({ ...row, _id: row.id })),
+      total: matchedIds.length,
+      totalPages: Math.ceil(matchedIds.length / l),
+      currentPage: p,
+    };
+  }
 
   const [products, total] = await Promise.all([
     prisma.product.findMany({
