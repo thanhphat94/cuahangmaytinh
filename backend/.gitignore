@@ -1,0 +1,10 @@
+node_modules/
+.env
+*.log
+dist/
+.DS_Store
+
+/src/generated/prisma
+
+# User-uploaded media should not be committed with source code
+/uploads/

@@ -1,0 +1,355 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      String   @default("customer") // "customer", "admin"
+  avatar    String?
+  isActive  Boolean  @default(true)
+  tokenVersion Int @default(0)
+  refreshTokenHash String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  reviews       Review[]
+  wishlistItems Wishlist[]
+  pcBuilds      PcBuild[]
+  passwordResetTokens PasswordResetToken[]
+  cartItems     CartItem[]
+}
+
+model Address {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  address   String
+  ward      String?
+  district  String?
+  province  String?
+  isDefault Boolean @default(false)
+}
+
+model Category {
+  id            String     @id @default(uuid())
+  name          String
+  slug          String     @unique
+  parentId      String?
+  parent        Category?  @relation("Subcategories", fields: [parentId], references: [id])
+  subcategories Category[] @relation("Subcategories")
+  level         Int        @default(0)
+  description   String?
+  image         String?
+  isActive      Boolean    @default(true)
+  sortOrder     Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  categoryId       String
+  category         Category @relation(fields: [categoryId], references: [id])
+  name             String
+  slug             String   @unique
+  sku              String?  @unique
+  brand            String?
+  description      String?  @db.Text
+  shortDescription String?
+  images           String[]
+  price            Float
+  originalPrice    Float?
+  unit             String   @default("Cái")
+  stock            Int      @default(0)
+  warranty         String?
+  isActive         Boolean  @default(true)
+  isFeatured       Boolean  @default(false)
+  isNewProduct     Boolean  @default(false)
+  tags             String[]
+  viewCount        Int      @default(0)
+  sold             Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  specs        ProductSpec[]
+  variants     ProductVariant[]
+  reviews      Review[]
+  orderItems   OrderItem[]
+  pcBuildItems PcBuildComponent[]
+  wishlistItems Wishlist[]
+  cartItems     CartItem[]
+}
+
+model ProductSpec {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+}
+
+model ProductVariant {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String?
+  sku       String?
+  price     Float?
+  stock     Int?
+  image     String?
+}
+
+model Order {
+  id        String  @id @default(uuid())
+  orderCode String  @unique
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+
+  customerFullName String
+  customerEmail    String?
+  customerPhone    String
+  customerAddress  String
+
+  totalAmount Float
+  shippingFee Float @default(0)
+  discount    Float @default(0)
+  finalAmount Float
+
+  status        String  @default("pending") // "pending", "confirmed", "shipping", "completed", "cancelled"
+  paymentMethod String  @default("cod") // "cod", "bank_transfer", "momo", "vnpay"
+  paymentStatus String  @default("unpaid") // "unpaid", "paid", "refunded"
+  note          String? @db.Text
+
+  // Shipping Info (Flattened)
+  shippingProvider      String?   @default("manual") // "ghn", "ghtk", "viettelpost", "manual"
+  shippingProviderLabel String?   @default("Tự giao")
+  shippingTrackingCode  String?
+  shippingWebhookToken  String?
+  shippingDeliveredAt   DateTime?
+  shippingFailedAt      DateTime?
+  guestAccessToken      String?   @unique
+  voucherId             String?
+  voucherCode           String?
+  voucher               Voucher?  @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items           OrderItem[]
+  statusHistory   OrderStatusHistory[]
+  trackingHistory ShippingTrackingHistory[]
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name      String?
+  image     String?
+  price     Float?
+  quantity  Int?
+  variant   String?
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  note      String?
+  changedBy String   @default("system")
+  changedAt DateTime @default(now())
+}
+
+model ShippingTrackingHistory {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status      String?
+  statusLabel String?
+  location    String?
+  note        String?
+  recordedAt  DateTime @default(now())
+  source      String   @default("webhook")
+}
+
+model Banner {
+  id        String   @id @default(uuid())
+  title     String?
+  image     String
+  link      String?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  fullName  String
+  email     String
+  phone     String?
+  message   String   @db.Text
+  isRead    Boolean  @default(false)
+  userId    String?  // tài khoản gửi liên hệ (null nếu khách chưa đăng nhập)
+  reply     String?  @db.Text // câu trả lời của admin
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PcBuild {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String   @default("Cấu hình của tôi")
+  totalPrice Float    @default(0)
+  isPublic   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  components PcBuildComponent[]
+}
+
+model PcBuildComponent {
+  id        String   @id @default(uuid())
+  pcBuildId String
+  pcBuild   PcBuild  @relation(fields: [pcBuildId], references: [id], onDelete: Cascade)
+  type      String // "cpu", "mainboard", "ram", "ssd", "hdd", "vga", "psu", "case", "cooler", "monitor"
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name      String?
+  price     Float?
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  title     String
+  slug      String   @unique
+  content   String?  @db.Text
+  thumbnail String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating     Int
+  comment    String?  @db.Text
+  images     String[]
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([productId, userId])
+}
+
+model SiteSettings {
+  id               String   @id @default(uuid())
+  storeName        String   @default("Cửa Hàng Máy Tính")
+  tagline          String   @default("Thiết bị tin học chính hãng")
+  email            String   @default("info@cuahangmaytinh.vn")
+  phone            String   @default("0934 444 369")
+  hotline          String   @default("0934 444 369")
+  address          String   @default("123 Đường ABC, Quận XYZ, TP.HCM")
+  description      String   @default("Cửa hàng máy tính chuyên cung cấp thiết bị tin học chính hãng") @db.Text
+  workingHours     String   @default("8:00 - 18:00 (Thứ 2 - Thứ 7)")
+  defaultShippingFee Float   @default(30000)
+  freeShippingFrom   Float   @default(500000)
+  enableCod          Boolean @default(true)
+  enableBankTransfer Boolean @default(false)
+  bankName           String   @default("")
+  bankAccount        String   @default("")
+  bankAccountName    String   @default("")
+  enableMomo         Boolean @default(false)
+  enableVnpay        Boolean @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Voucher {
+  id         String   @id @default(uuid())
+  code       String   @unique
+  type       String   // percent | flat | freeship
+  value      Float    @default(0)
+  label      String
+  minOrder   Float    @default(0)
+  active     Boolean  @default(true)
+  usageLimit Int?
+  usedCount  Int      @default(0)
+  startsAt   DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orders Order[]
+}
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  variant   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, productId, variant])
+}
+
+// Bảng giá sản phẩm (file PDF/Excel/Word do admin upload, khách tải về)
+model PriceList {
+  id           String   @id @default(uuid())
+  title        String
+  filename     String   // tên file đã lưu trong thư mục uploads/pricelists
+  originalName String   // tên file gốc để hiển thị khi tải về
+  size         Int
+  createdAt    DateTime @default(now())
+}

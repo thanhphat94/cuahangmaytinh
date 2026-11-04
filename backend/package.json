@@ -1,0 +1,56 @@
+{
+  "name": "cuahangmaytinh-api",
+  "version": "1.0.0",
+  "description": "CuaHangMayTinh backend API",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "import:laptops": "tsx src/scripts/importThunderbitLaptops.ts",
+    "db:validate": "prisma validate",
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "import:printers": "tsx src/scripts/importPrintersOnly.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^2.32.0",
+    "@google/generative-ai": "^0.24.1",
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.21.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "express-validator": "^7.1.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.3.1",
+    "pg": "^8.21.0",
+    "qs": "^6.12.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/morgan": "^1.9.9",
+    "@types/multer": "^2.3.0",
+    "@types/node": "^20.19.43",
+    "@types/nodemailer": "^6.4.15",
+    "@types/pg": "^8.11.6",
+    "@types/qs": "^6.9.15",
+    "prisma": "^5.22.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.5.4"
+  },
+  "overrides": {
+    "body-parser": "1.20.9"
+  }
+}
