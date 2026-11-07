@@ -1,3 +1,4 @@
+import { env } from '../config/env';
 import axios from 'axios';
 import { prisma } from '../config/db';
 
@@ -27,7 +28,7 @@ type ProductItem = {
 const formatPrice = (n: number) => new Intl.NumberFormat('vi-VN').format(n) + 'đ';
 
 /**
- * Trả lời câu hỏi tư vấn bằng Local AI (Ollama - Qwen 2.5)
+ * Trả lời câu hỏi tư vấn bằng Local AI (Ollama - model cấu hình trong OLLAMA_MODEL, mặc định gemma3:1b)
  */
 export const chatWithGemini = async ({ message, history = [] }: ChatInput) => {
   try {
@@ -64,9 +65,9 @@ Quy tắc: Trả lời thân thiện bằng tiếng Việt, ngắn gọn (tối 
 
     // 2. Gọi Ollama API với IP 127.0.0.1, timeout 120s và giới hạn token
     const response = await axios.post<OllamaResponse>(
-      'http://127.0.0.1:11434/api/chat',
+      `${env.ollama.baseUrl}/api/chat`,
       {
-        model: 'qwen2.5:3b',
+        model: env.ollama.model,
         messages: messagesPayload,
         stream: false,
         options: {

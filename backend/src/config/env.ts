@@ -128,7 +128,7 @@ export const env = {
   ollama: {
     // Ollama phải truy cập được từ chính máy/môi trường đang chạy backend.
     baseUrl: withDefault('OLLAMA_BASE_URL', 'http://127.0.0.1:11434').replace(/\/+$/, ''),
-    model: withDefault('OLLAMA_MODEL', 'qwen2.5:3b'),
+    model: withDefault('OLLAMA_MODEL', 'gemma3:1b'),
     timeoutMs: Math.max(30_000, Number(withDefault('OLLAMA_TIMEOUT_MS', '180000')) || 180_000),
   },
 } as const;
