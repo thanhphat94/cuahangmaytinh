@@ -16,8 +16,8 @@ function Footer() {
           {/* Company info */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 flex items-center justify-center bg-gray-900 border border-gray-700 shadow-sm overflow-hidden p-1">
-                <img src="/images/logo.svg" alt="Logo" className="w-full h-full object-contain" />
+              <div className="w-10 h-10 flex items-center justify-center bg-gray-900 border border-gray-700 shadow-sm overflow-hidden">
+                <img src="/images/logodoan2-icon.png" alt="Logo" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h3 className="font-bold text-lg">{settings.storeName.toUpperCase()}</h3>

@@ -182,8 +182,8 @@ function Header() {
         <div className="container flex items-center justify-between gap-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 flex items-center justify-center bg-gray-900 border border-gray-800 shadow-sm overflow-hidden p-1">
-              <img src="/images/logo.svg" alt="Logo" className="w-full h-full object-contain" />
+            <div className="w-10 h-10 flex items-center justify-center bg-gray-900 border border-gray-800 shadow-sm overflow-hidden">
+              <img src="/images/logodoan2-icon.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-[#1a73e8] leading-tight">
