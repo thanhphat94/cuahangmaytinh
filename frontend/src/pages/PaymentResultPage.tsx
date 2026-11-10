@@ -28,7 +28,7 @@ function PaymentResultPage() {
         // Always send the guest capability token when we have one. The server
         // ignores it for member orders and requires it for guest orders.
         let guestAccessToken = ''
-        const stored = JSON.parse(localStorage.getItem('cuahangmaytinh_orders') || '[]') as Order[]
+        const stored = JSON.parse(sessionStorage.getItem('cuahangmaytinh_orders') || '[]') as Order[]
         guestAccessToken = stored.find((order) => order.orderCode === orderCode)?.guestAccessToken || ''
         const query = guestAccessToken ? `?guestAccessToken=${encodeURIComponent(guestAccessToken)}` : ''
         const response = await api.get<{

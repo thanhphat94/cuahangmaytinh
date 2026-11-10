@@ -57,6 +57,7 @@ export const logout = createAsyncThunk<void, void>(
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
     }
+    sessionStorage.removeItem('cuahangmaytinh_orders')
   }
 )
 
@@ -81,6 +82,7 @@ const authSlice = createSlice({
   reducers: {
     setUser: (state, action: PayloadAction<User | null>) => { state.user = action.payload; },
     clearLocalSession: (state) => {
+      sessionStorage.removeItem('cuahangmaytinh_orders')
       state.user  = null
       state.token = null
       state.error = null
@@ -97,6 +99,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     const handleAuthFulfilled = (state: AuthState, action: PayloadAction<AuthResponse>) => {
+      sessionStorage.removeItem('cuahangmaytinh_orders') // đơn của khách vãng lai không được chuyển sang tài khoản khác
       state.status = 'succeeded'
       state.token = action.payload.token
       // Backend chỉ trả `_id` trong response login/register — giữ nguyên như code gốc.
@@ -118,6 +121,7 @@ const authSlice = createSlice({
 
     builder
       .addCase(logout.pending, (state) => {
+        sessionStorage.removeItem('cuahangmaytinh_orders')
         // Xóa trạng thái UI ngay; authService vẫn giữ token trong localStorage cho request thu hồi server-side.
         state.user = null
         state.token = null
@@ -125,6 +129,7 @@ const authSlice = createSlice({
         state.error = null
       })
       .addCase(logout.fulfilled, (state) => {
+        sessionStorage.removeItem('cuahangmaytinh_orders')
         state.user = null
         state.token = null
         state.status = 'idle'

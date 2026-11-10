@@ -452,10 +452,10 @@ function OrdersPage() {
     setLoading(true)
     setError(null)
 
-    // 1. Đọc đơn hàng từ localStorage (guest + đã login đều có)
+    // 1. Đơn khách vãng lai: lưu theo phiên trình duyệt (sessionStorage), khách khác/tab mới sẽ thấy trống
     let localOrders: OrderRow[] = []
     try {
-      localOrders = JSON.parse(localStorage.getItem('cuahangmaytinh_orders') || '[]') as OrderRow[]
+      localOrders = JSON.parse(sessionStorage.getItem('cuahangmaytinh_orders') || '[]') as OrderRow[]
     } catch {}
 
     // Làm mới trạng thái đơn guest còn pending bằng capability token; token không được gửi qua URL.
@@ -472,7 +472,7 @@ function OrdersPage() {
         })
         const refreshedByCode = new Map(response.data.map((order) => [order.orderCode, order]))
         localOrders = localOrders.map((order) => refreshedByCode.get(order.orderCode) || order)
-        localStorage.setItem('cuahangmaytinh_orders', JSON.stringify(localOrders))
+        sessionStorage.setItem('cuahangmaytinh_orders', JSON.stringify(localOrders))
       } catch { /* keep local order data if the status refresh is temporarily unavailable */ }
     }
 
@@ -486,22 +486,15 @@ function OrdersPage() {
         const body = res.data as { data?: OrderRow[] } | OrderRow[] | undefined
         const apiOrders: OrderRow[] = (body && !Array.isArray(body) ? body.data : body) ?? []
 
-        // Merge: ưu tiên API (dữ liệu mới nhất), bỏ trùng theo orderCode
-        const codeSet = new Set(apiOrders.map(o => o.orderCode))
-        const uniqueLocal = localOrders.filter(o => !codeSet.has(o.orderCode))
-        const merged = [...apiOrders, ...uniqueLocal]
-        merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        setOrders(merged)
+        // Đã đăng nhập: chỉ hiện đơn của tài khoản này (không trộn đơn khách vãng lai lưu trong trình duyệt)
+        apiOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        setOrders(apiOrders)
       } catch {
-        // Nếu API lỗi thì vẫn dùng localStorage
-        localOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        setOrders(localOrders)
-        if (localOrders.length === 0) {
-          setError('Không thể tải đơn hàng. Vui lòng thử lại.')
-        }
+        setOrders([])
+        setError('Không thể tải đơn hàng. Vui lòng thử lại.')
       }
     } else {
-      // Chưa đăng nhập → chỉ dùng localStorage
+      // Chưa đăng nhập → chỉ hiện đơn khách vãng lai của phiên này
       localOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       setOrders(localOrders)
     }
@@ -608,8 +601,8 @@ function OrdersPage() {
               onUpdated={(updated) => {
                 setOrders(prev => prev.map(o => (o.orderCode === updated.orderCode ? updated : o)))
                 try {
-                  const saved = JSON.parse(localStorage.getItem('cuahangmaytinh_orders') || '[]') as OrderRow[]
-                  localStorage.setItem('cuahangmaytinh_orders', JSON.stringify(saved.map(o => o.orderCode === updated.orderCode ? updated : o)))
+                  const saved = JSON.parse(sessionStorage.getItem('cuahangmaytinh_orders') || '[]') as OrderRow[]
+                  sessionStorage.setItem('cuahangmaytinh_orders', JSON.stringify(saved.map(o => o.orderCode === updated.orderCode ? updated : o)))
                 } catch { /* ignore storage failures; current UI state is still updated */ }
               }}
             />

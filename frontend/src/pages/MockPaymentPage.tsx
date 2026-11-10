@@ -74,7 +74,7 @@ function MockPaymentPage() {
     const fromUrl = params.get('guestAccessToken')
     if (fromUrl) return fromUrl
     try {
-      const stored = JSON.parse(localStorage.getItem('cuahangmaytinh_orders') || '[]') as Order[]
+      const stored = JSON.parse(sessionStorage.getItem('cuahangmaytinh_orders') || '[]') as Order[]
       return stored.find((o) => o.orderCode === orderCode)?.guestAccessToken || ''
     } catch {
       return ''

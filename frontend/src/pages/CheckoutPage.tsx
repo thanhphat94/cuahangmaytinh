@@ -448,8 +448,8 @@ function CheckoutPage() {
       // Khách vãng lai: lưu đơn vào trình duyệt để trang "Đơn hàng của tôi" xem lại được
       if (!localStorage.getItem('token')) {
         try {
-          const saved = JSON.parse(localStorage.getItem('cuahangmaytinh_orders') || '[]') as Order[]
-          localStorage.setItem('cuahangmaytinh_orders', JSON.stringify([order, ...saved].slice(0, 20)))
+          const saved = JSON.parse(sessionStorage.getItem('cuahangmaytinh_orders') || '[]') as Order[]
+          sessionStorage.setItem('cuahangmaytinh_orders', JSON.stringify([order, ...saved].slice(0, 20)))
         } catch {}
       }
 

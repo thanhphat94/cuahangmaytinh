@@ -103,6 +103,7 @@ api.interceptors.response.use(
 )
 
 function forceLogout(): Promise<never> {
+  sessionStorage.removeItem('cuahangmaytinh_orders')
   localStorage.removeItem('token')
   localStorage.removeItem('refreshToken')
   localStorage.removeItem('user')
